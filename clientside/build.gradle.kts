@@ -51,6 +51,10 @@ android {
 
 dependencies {
 
+    //Koin
+    implementation("io.insert-koin:koin-android:3.6.0-wasm-alpha2")
+    implementation("io.insert-koin:koin-androidx-compose:3.6.0-wasm-alpha2")
+
     implementation("io.ktor:ktor-client-core:2.3.11")
     implementation("io.ktor:ktor-client-cio:2.3.11")
     implementation("io.ktor:ktor-client-websockets:2.3.11")

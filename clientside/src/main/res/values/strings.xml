@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ClientSide</string>
+    <string name="accessibility_service_label">client service</string>
+    <string name="accessibility_service_description">client service desk</string>
 </resources>

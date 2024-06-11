@@ -1,11 +1,18 @@
 package com.example.clientside
 
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,23 +53,15 @@ import java.util.Scanner
 
 class ClientSide : ComponentActivity() {
 
-    lateinit var webSocketClient: WebSocketClient
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val serverIp = "192.168.1.211"
-        val serverPort = 8080
-
-        webSocketClient = WebSocketClient(serverIp, serverPort)
 
         enableEdgeToEdge()
         setContent {
             ServerSideTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        client = webSocketClient,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    MainScreen(context = applicationContext)
                 }
             }
         }
@@ -69,21 +69,45 @@ class ClientSide : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(client: WebSocketClient, modifier: Modifier) {
-    val listCompose = client.serverData.collectAsState()
-    LazyColumn {
-        items(listCompose.value) {
-            Text(text = it)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        item {
-            var text by remember { mutableStateOf("") }
-            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center) {
-                OutlinedTextField(value = text, onValueChange = { text = it })
-                Button(onClick = { client.sendMessage(text);text = "" }) {
-                    Text(text = "Send")
-                }
+fun MainScreen(context: Context) {
+    var webSocketClient: WebSocketClient? by remember { mutableStateOf(null) }
+    var extendPortConfig by remember { mutableStateOf(false) }
+    val serverIp = "192.168.1.211"
+    val serverPort = 8080
+    Column(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Button(onClick = {
+            extendPortConfig = !extendPortConfig
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+            context.startActivity(intent)
+        }) {
+            Text(text = "Config")
+        }
+        if (extendPortConfig) {
+            ExtendedConfig(
+
+            )
+        }
+        Button(onClick = {
+            webSocketClient = WebSocketClient(serverIp, serverPort)
+        }) {
+            Text(text = "Начать/Пауза")
         }
     }
 }
+
+@Composable
+fun ExtendedConfig() {
+
+}
+
+/*val urlIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("http://192.168.1.211:8080/ws")
+            ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(urlIntent)*/
