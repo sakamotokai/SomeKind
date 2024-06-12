@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    id("com.google.devtools.ksp") version "2.0.0-1.0.21"
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -52,16 +52,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
 }
 
 dependencies {
-
-    //Room
-    val room_version = "2.6.1"
-    implementation("androidx.room:room-runtime:$room_version")
-    annotationProcessor("androidx.room:room-compiler:$room_version")
-    ksp("androidx.room:room-compiler:$room_version")
-    implementation("androidx.room:room-ktx:$room_version")
 
     //Gson
     implementation("com.google.code.gson:gson:2.11.0")

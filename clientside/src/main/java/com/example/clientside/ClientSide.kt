@@ -74,10 +74,11 @@ class ClientSide : ComponentActivity() {
 
 @Composable
 fun MainScreen(context: Context) {
-    var webSocketClient = koinInject<WebSocketClient>()
+    val webSocketClient = koinInject<WebSocketClient>()
     var extendPortConfig by remember { mutableStateOf(false) }
     val serverIp = "192.168.1.211"
     val serverPort = 8080
+    val service = koinInject<HandleAccessibilityService>()
     Column(
         Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -91,7 +92,9 @@ fun MainScreen(context: Context) {
                     }
                     HandleAccessibilityService.handler.clear()
                 }
-            } catch (e: Exception) { Log.e("localError", "Exception ${e.localizedMessage}")}
+            } catch (e: Exception) {
+                Log.e("localError", "Exception ${e.localizedMessage}")
+            }
             extendPortConfig = !extendPortConfig
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
                 setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -106,23 +109,17 @@ fun MainScreen(context: Context) {
             )
         }
         Button(onClick = {
-            webSocketClient.launch()//TODO("CARRY TO VIEWMODEL AND MAKE IT WORK")
-            val urlIntent = Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("http://192.168.1.211:8080/ws")
-            ).apply {
-                setPackage("com.android.chrome")
-                //addCategory(Intent.CATEGORY_LAUNCHER)
-                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            try{
-                context.startActivity(urlIntent)
-            } catch (e:Exception){
-                urlIntent.setPackage(null)
-                context.startActivity(urlIntent)
-            }
+            if (webSocketClient.connectionIsActive()) webSocketClient.closeSession()
+            else webSocketClient.launch()//TODO("CARRY TO VIEWMODEL AND MAKE IT WORK")
         }) {
             Text(text = "Начать/Пауза")
+        }
+
+        Button(onClick = { val urlIntent = Intent(
+            Settings.ACTION_ACCESSIBILITY_SETTINGS
+        )
+            context.startActivity(urlIntent) }) {
+            Text(text = "Accept accessibility service")
         }
     }
 }
@@ -131,9 +128,3 @@ fun MainScreen(context: Context) {
 fun ExtendedConfig() {
 
 }
-
-/*val urlIntent = Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("http://192.168.1.211:8080/ws")
-            ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(urlIntent)*/

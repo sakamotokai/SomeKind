@@ -67,50 +67,77 @@ class WebSocketServer(private var host: String = "127.0.0.1", private var port: 
                 masking = false
             }//TODO("SEND JSON")
             routing {
+                val coroutineScope = CoroutineScope(SupervisorJob())
+                coroutineScope.launch {
                 webSocket("/ws") {
-                    Log.e("localError", "WebSocket is Activated")
-                    coroutineSessions += scope.launch(Dispatchers.IO) {
-                        sessions += this@webSocket
-                        val gson = Gson()
-                        val json = gson.toJson(pathDataSet)
+                    sessions += this
+
+                    val dataset = Gson().toJson(pathDataSet)
+
                         try {
+                            send(Frame.Text(dataset))
                             while (true) {
-                                send(Frame.Text(json))
-                                val nestedScope = launch {
-                                    while (true) {
-                                        for (frame in incoming) {
-                                            frame as? Frame.Text ?: continue
-                                            Log.e("localError", "Write to RoomDB")
-                                            this.cancel()
-                                        }
+                                for (frame in incoming) {
+                                    if (frame as? Frame.Text != null) {
+                                        Log.e("localError", "Write to RoomDB")
+                                        send(Frame.Text(dataset))
+                                        //this.cancel()
                                     }
                                 }
-                                delay(3000)
-                                if (!nestedScope.isCancelled) {
-                                    nestedScope.cancel()
-                                    for (frame in incoming) {
-                                        frame as? Frame.Text ?: continue
-                                        Log.e("localError", "Write to RoomDB2")
-                                    }
-                                }
-
-                                /*                            send()
-                                                        for(frame in incoming){
-                                                            frame as? Frame.Text?:continue
-                                                            if(frame.readText() == "start"){
-
-                                                            } else if(frame.readText() == "done"){
-
-                                                            }
-                                                        }*/
-
+                                delay(500)
                             }
-                        } finally {
+                        } catch (e:Exception){
+                            Log.e("localError", "Exception1: ${e.localizedMessage}")
                             sessions -= this@webSocket
-                            this.cancel()
+                            this@webSocket.close()
+                        }
+                        finally {
+                            //MAYBE REMOVE THAT
                         }
                     }
                 }
+                /*                coroutineSessions += scope.launch(Dispatchers.IO){
+                                webSocket("/ws") {
+                                    Log.e("localError", "WebSocket is Activated")
+                                        sessions += this@webSocket
+                                        val gson = Gson()
+                                        val json = gson.toJson(pathDataSet)
+                                        try {
+                                            send(Frame.Text(json))
+                                            val nestedScope = launch {
+                                                while (true) {
+                                                    delay(500)
+                                                    for (frame in incoming) {
+                                                        if (frame as? Frame.Text != null) {
+                                                            Log.e("localError", "Write to RoomDB")
+                                                            send(Frame.Text(json))
+                                                            this.cancel()
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            delay(3000)
+                                            if (!nestedScope.isCancelled) {
+                                                nestedScope.cancel()
+                                                for (frame in incoming) {
+                                                    frame as? Frame.Text ?: continue
+                                                    Log.e("localError", "Write to RoomDB2")
+                                                    send(Frame.Text(json))
+                                                }
+                                            }
+
+                                        } catch (e: Exception) {
+                                            Log.e(
+                                                "localError",
+                                                "Exception: ${e.localizedMessage} \n Message: ${e.message}"
+                                            )
+                                        } finally {
+                                            sessions -= this@webSocket
+                                            this.cancel()
+                                        }
+                                    }
+                                    Log.e("localError", "Is Ended")
+                                }*/
             }
         }.apply {
             try {
