@@ -2,4 +2,6 @@
     <string name="app_name">ClientSide</string>
     <string name="accessibility_service_label">client service</string>
     <string name="accessibility_service_description">client service desk</string>
+    <string name="handle_accessibility_service_description">handle service desk</string>
+    <string name="handle_accessibility_service_label">handle service</string>
 </resources>

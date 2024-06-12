@@ -12,10 +12,26 @@ import io.ktor.server.jetty.JettyApplicationEngine
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.time.Duration
+import    android.graphics.Path
+import com.example.serverside.server.dataset.PathDC
+import com.example.serverside.server.dataset.pathDataSet
+import com.google.gson.Gson
+import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import org.json.JSONObject
 
 
 class WebSocketServer(private var host: String = "127.0.0.1", private var port: Int = 8080) {
@@ -29,6 +45,12 @@ class WebSocketServer(private var host: String = "127.0.0.1", private var port: 
     private var sessions: HashSet<DefaultWebSocketSession> = HashSet()
     private var server: JettyApplicationEngine? = null
 
+    companion object {
+        private var coroutineSessions: MutableList<Job?> = mutableListOf(null)
+    }
+
+    private val scope = CoroutineScope(SupervisorJob())
+
     fun getServerInstance() = server
 
     suspend fun startServer() {
@@ -38,28 +60,55 @@ class WebSocketServer(private var host: String = "127.0.0.1", private var port: 
 
         embeddedServer(Jetty, port = port, host = host) {
             install(WebSockets) {
+                contentConverter = KotlinxWebsocketSerializationConverter(Json)
                 pingPeriod = Duration.ofSeconds(15)
                 timeout = Duration.ofSeconds(15)
                 maxFrameSize = Long.MAX_VALUE
                 masking = false
-            }
+            }//TODO("SEND JSON")
             routing {
                 webSocket("/ws") {
-                    sessions += this
-                    try {
-                        send("You are connected to WebSocket server!")
-                        for (frame in incoming) {
-                            if (frame is Frame.Text) {
-                                val receivedText = frame.readText()
-                                sessions.forEach {
-                                    it.send(Frame.Text("You said: $receivedText"))
-                                    _serverData.value += receivedText
+                    Log.e("localError", "WebSocket is Activated")
+                    coroutineSessions += scope.launch(Dispatchers.IO) {
+                        sessions += this@webSocket
+                        val gson = Gson()
+                        val json = gson.toJson(pathDataSet)
+                        try {
+                            while (true) {
+                                send(Frame.Text(json))
+                                val nestedScope = launch {
+                                    while (true) {
+                                        for (frame in incoming) {
+                                            frame as? Frame.Text ?: continue
+                                            Log.e("localError", "Write to RoomDB")
+                                            this.cancel()
+                                        }
+                                    }
                                 }
+                                delay(3000)
+                                if (!nestedScope.isCancelled) {
+                                    nestedScope.cancel()
+                                    for (frame in incoming) {
+                                        frame as? Frame.Text ?: continue
+                                        Log.e("localError", "Write to RoomDB2")
+                                    }
+                                }
+
+                                /*                            send()
+                                                        for(frame in incoming){
+                                                            frame as? Frame.Text?:continue
+                                                            if(frame.readText() == "start"){
+
+                                                            } else if(frame.readText() == "done"){
+
+                                                            }
+                                                        }*/
+
                             }
+                        } finally {
+                            sessions -= this@webSocket
+                            this.cancel()
                         }
-                    } catch (_: Exception) {
-                    } finally {
-                        sessions -= this
                     }
                 }
             }

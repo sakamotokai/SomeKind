@@ -2,6 +2,7 @@ package com.example.clientside
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.clientside.accessibilityService.HandleAccessibilityService
 import com.example.clientside.ktorClient.WebSocketClient
 import com.example.clientside.ui.theme.ServerSideTheme
 import io.ktor.client.HttpClient
@@ -49,6 +51,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import org.koin.compose.getKoin
+import org.koin.compose.koinInject
 import java.util.Scanner
 
 class ClientSide : ComponentActivity() {
@@ -70,7 +74,7 @@ class ClientSide : ComponentActivity() {
 
 @Composable
 fun MainScreen(context: Context) {
-    var webSocketClient: WebSocketClient? by remember { mutableStateOf(null) }
+    var webSocketClient = koinInject<WebSocketClient>()
     var extendPortConfig by remember { mutableStateOf(false) }
     val serverIp = "192.168.1.211"
     val serverPort = 8080
@@ -80,6 +84,14 @@ fun MainScreen(context: Context) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Button(onClick = {
+            try {
+                HandleAccessibilityService().apply {
+                    HandleAccessibilityService.handler.forEach {
+                        it?.disableSelf()
+                    }
+                    HandleAccessibilityService.handler.clear()
+                }
+            } catch (e: Exception) { Log.e("localError", "Exception ${e.localizedMessage}")}
             extendPortConfig = !extendPortConfig
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
                 setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -94,7 +106,21 @@ fun MainScreen(context: Context) {
             )
         }
         Button(onClick = {
-            webSocketClient = WebSocketClient(serverIp, serverPort)
+            webSocketClient.launch()//TODO("CARRY TO VIEWMODEL AND MAKE IT WORK")
+            val urlIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("http://192.168.1.211:8080/ws")
+            ).apply {
+                setPackage("com.android.chrome")
+                //addCategory(Intent.CATEGORY_LAUNCHER)
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            try{
+                context.startActivity(urlIntent)
+            } catch (e:Exception){
+                urlIntent.setPackage(null)
+                context.startActivity(urlIntent)
+            }
         }) {
             Text(text = "Начать/Пауза")
         }
