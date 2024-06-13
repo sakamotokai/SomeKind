@@ -1,10 +1,9 @@
 package com.example.serverside.ui.theme.screen
 
-import android.util.Log
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.serverside.repository.DbRepository
-import com.example.serverside.repository.DbRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,7 +20,6 @@ class LogsScreenVM(private val db: DbRepository) : ViewModel() {
             launch {
                 _logs.value.forEach {
                     it.forEach {
-                        Log.e("lofigirl", "LogsScreenVM: ${it}")
                     }
                 }
             }

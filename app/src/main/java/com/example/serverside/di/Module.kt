@@ -10,7 +10,6 @@ import com.example.serverside.repository.DbRepositoryImpl
 import com.example.serverside.server.WebSocketServer
 import com.example.serverside.ui.theme.screen.LogsScreenVM
 import com.example.serverside.ui.theme.screen.MainScreenVM
-import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -31,6 +30,8 @@ val koinModule = module {
         val context: Context = get()
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val ipAddress: String = Formatter.formatIpAddress(wifiManager.connectionInfo.ipAddress)
-        WebSocketServer(ipAddress, 8080, get())
+        WebSocketServer(get()).apply {
+            this.setProperty(8080, ipAddress)
+        }
     }
 }

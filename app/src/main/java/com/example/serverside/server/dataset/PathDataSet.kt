@@ -1,10 +1,5 @@
 package com.example.serverside.server.dataset
 
-import android.graphics.Path
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Serializer
-
-@Serializable
 data class PathDC(
     val moveX:Float,
     val moveY:Float,

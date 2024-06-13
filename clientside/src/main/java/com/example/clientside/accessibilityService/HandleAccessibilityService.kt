@@ -1,52 +1,19 @@
 package com.example.clientside.accessibilityService
 
-import android.accessibilityservice.AccessibilityGestureEvent
+
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.accessibilityservice.FingerprintGestureController
-import android.accessibilityservice.FingerprintGestureController.FINGERPRINT_GESTURE_SWIPE_DOWN
-import android.accessibilityservice.FingerprintGestureController.FINGERPRINT_GESTURE_SWIPE_LEFT
-import android.accessibilityservice.FingerprintGestureController.FINGERPRINT_GESTURE_SWIPE_RIGHT
-import android.accessibilityservice.FingerprintGestureController.FINGERPRINT_GESTURE_SWIPE_UP
 import android.accessibilityservice.GestureDescription
-import android.accessibilityservice.InputMethod
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Path
-import android.util.Log
-import android.view.KeyEvent
-import android.view.MotionEvent
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityNodeInfo
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import com.example.clientside.ktorClient.WebSocketClient
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import org.koin.android.ext.android.inject
-import org.koin.java.KoinJavaComponent.inject
 
 class HandleAccessibilityService : AccessibilityService() {
 
     companion object {
-        var handler: MutableList<HandleAccessibilityService?> = mutableListOf(null)
-        val scope = CoroutineScope(SupervisorJob())
         var service: HandleAccessibilityService? = null
         var gesture: GestureDescription? = null
         var gestureCompleted = false
-    }
-
-
-    private val client by inject<WebSocketClient>()
-    private val scope = CoroutineScope(SupervisorJob())
-
-    override fun onCreate() {
-        super.onCreate()
-        Log.e("localError", "service is start")
     }
 
     override fun onServiceConnected() {
@@ -58,9 +25,7 @@ class HandleAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {}
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        Log.e("lofigirl", "Inside")
         if (gesture != null) {
-            Log.e("lofigirl", "Inside != null")
             gestureCompleted = false
 
             val localGesture = GestureDescription.StrokeDescription(Path().apply {
@@ -72,13 +37,10 @@ class HandleAccessibilityService : AccessibilityService() {
                 GestureDescription.Builder().addStroke(localGesture).build(),
                 object : GestureResultCallback() {
                     override fun onCancelled(gestureDescription: GestureDescription?) {
-                        Log.e("lofigirl", "Cancelled")
                         super.onCancelled(gestureDescription)
                     }
 
                     override fun onCompleted(gestureDescription: GestureDescription?) {
-                        Log.e("localError", "Gesture Completed")
-                        Log.e("lofigirl", "Completed")
                         gesture = null
                         super.onCompleted(gestureDescription)
                     }
@@ -86,7 +48,6 @@ class HandleAccessibilityService : AccessibilityService() {
                 null
             ).apply {
                 gestureCompleted = this
-                Log.e("lofigirl", this.toString())
             }
         }
     }

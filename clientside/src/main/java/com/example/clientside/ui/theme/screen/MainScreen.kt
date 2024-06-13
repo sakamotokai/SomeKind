@@ -1,8 +1,6 @@
 package com.example.clientside.ui.theme.screen
 
 import android.content.Context
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,12 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.clientside.R
-import com.example.clientside.ktorClient.WebSocketClient
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
 
 @Composable
-
 fun MainScreen(context: Context) {
     var extendPortConfig by remember { mutableStateOf(false) }
     val mainScreenVM = koinViewModel<MainScreenVM>()
