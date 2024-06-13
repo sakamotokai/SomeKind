@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.example.clientside.accessibilityService.HandleAccessibilityService
 import com.example.clientside.ktorClient.WebSocketClient
 import com.example.clientside.ui.theme.ServerSideTheme
+import com.example.clientside.ui.theme.screen.MainScreen
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.websocket.WebSockets
@@ -70,61 +72,4 @@ class ClientSide : ComponentActivity() {
             }
         }
     }
-}
-
-@Composable
-fun MainScreen(context: Context) {
-    val webSocketClient = koinInject<WebSocketClient>()
-    var extendPortConfig by remember { mutableStateOf(false) }
-    val serverIp = "192.168.1.211"
-    val serverPort = 8080
-    val service = koinInject<HandleAccessibilityService>()
-    Column(
-        Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Button(onClick = {
-            try {
-                HandleAccessibilityService().apply {
-                    HandleAccessibilityService.handler.forEach {
-                        it?.disableSelf()
-                    }
-                    HandleAccessibilityService.handler.clear()
-                }
-            } catch (e: Exception) {
-                Log.e("localError", "Exception ${e.localizedMessage}")
-            }
-            extendPortConfig = !extendPortConfig
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        }) {
-            Text(text = "Config")
-        }
-        if (extendPortConfig) {
-            ExtendedConfig(
-
-            )
-        }
-        Button(onClick = {
-            if (webSocketClient.connectionIsActive()) webSocketClient.closeSession()
-            else webSocketClient.launch()//TODO("CARRY TO VIEWMODEL AND MAKE IT WORK")
-        }) {
-            Text(text = "Начать/Пауза")
-        }
-
-        Button(onClick = { val urlIntent = Intent(
-            Settings.ACTION_ACCESSIBILITY_SETTINGS
-        )
-            context.startActivity(urlIntent) }) {
-            Text(text = "Accept accessibility service")
-        }
-    }
-}
-
-@Composable
-fun ExtendedConfig() {
-
 }

@@ -18,6 +18,9 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.example.clientside.ktorClient.WebSocketClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -32,7 +35,7 @@ class HandleAccessibilityService : AccessibilityService() {
     companion object {
         var handler: MutableList<HandleAccessibilityService?> = mutableListOf(null)
         val scope = CoroutineScope(SupervisorJob())
-        var service:HandleAccessibilityService? = null
+        var service: HandleAccessibilityService? = null
         var gesture: GestureDescription? = null
         var gestureCompleted = false
     }
@@ -63,21 +66,26 @@ class HandleAccessibilityService : AccessibilityService() {
             val localGesture = GestureDescription.StrokeDescription(Path().apply {
                 moveTo(100f, 700f)
                 lineTo(700f, 700f)
-            },100, 50)
+            }, 100, 50)
 
-            dispatchGesture(GestureDescription.Builder().addStroke(localGesture).build(), object : GestureResultCallback() {
-                override fun onCancelled(gestureDescription: GestureDescription?) {
-                    Log.e("lofigirl", "Cancelled")
-                    super.onCancelled(gestureDescription)
-                }
-                override fun onCompleted(gestureDescription: GestureDescription?) {
-                    Log.e("localError", "Gesture Completed")
-                    Log.e("lofigirl", "Completed")
-                    gesture = null
-                    gestureCompleted = true
-                    super.onCompleted(gestureDescription)
-                }
-            }, null).apply {
+            dispatchGesture(
+                GestureDescription.Builder().addStroke(localGesture).build(),
+                object : GestureResultCallback() {
+                    override fun onCancelled(gestureDescription: GestureDescription?) {
+                        Log.e("lofigirl", "Cancelled")
+                        super.onCancelled(gestureDescription)
+                    }
+
+                    override fun onCompleted(gestureDescription: GestureDescription?) {
+                        Log.e("localError", "Gesture Completed")
+                        Log.e("lofigirl", "Completed")
+                        gesture = null
+                        super.onCompleted(gestureDescription)
+                    }
+                },
+                null
+            ).apply {
+                gestureCompleted = this
                 Log.e("lofigirl", this.toString())
             }
         }

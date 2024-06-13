@@ -1,6 +1,8 @@
-package com.example.serverside.ui.theme.screen
+package com.example.clientside.ui.theme.screen
 
 import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,56 +20,51 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import com.example.serverside.R
-import com.example.serverside.navigation.NavigationItem
+import com.example.clientside.R
+import com.example.clientside.ktorClient.WebSocketClient
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
 @Composable
-fun MainScreen(navController: NavHostController) {
-    val context = koinInject<Context>()
-    val mainScreenVM = koinViewModel<MainScreenVM>()
+
+fun MainScreen(context: Context) {
     var extendPortConfig by remember { mutableStateOf(false) }
+    val mainScreenVM = koinViewModel<MainScreenVM>()
     Column(
         Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Button(onClick = { extendPortConfig = !extendPortConfig }) {
+        Button(onClick = {
+            extendPortConfig = !extendPortConfig
+        }) {
             Text(text = context.getString(R.string.configuration))
         }
         if (extendPortConfig) {
             ExtendedConfig(
-                switch = { extendPortConfig = false },
-                setServerProperties = { host, port ->
-                    mainScreenVM.setServerProperties(
-                        host,
-                        port
-                    )
-                },
-                mainScreenVM,
-                context
+                mainScreenVM = mainScreenVM,
+                context = context,
+                switch = { extendPortConfig = !extendPortConfig }
             )
         }
-        Button(onClick = { mainScreenVM.startServer() }) {
-            Text(text = context.getString(R.string.turn_on))
+        Button(onClick = {
+            mainScreenVM.closeOrOpenConnectionWebSocket()
+        }) {
+            Text(text = context.getString(R.string.start_stop_button))
         }
-        Button(onClick = { mainScreenVM.closeServer() }) {
-            Text(text = context.getString(R.string.turn_off))
+
+        Button(onClick = {
+            mainScreenVM.openAccessibilityOSScreen(context)
+        }) {
+            Text(text = context.getString(R.string.open_accessibility_screen))
         }
-        Button(onClick = { navController.navigate(NavigationItem.Logs.route) }) {
-            Text(text = context.getString(R.string.logs))
-        }
-        Text(text = mainScreenVM.getIP(koinInject<Context>()))
     }
 }
 
 @Composable
 private fun ExtendedConfig(
-    switch: () -> Unit,
-    setServerProperties: (host: String, port: Int) -> Unit,
     mainScreenVM: MainScreenVM,
+    switch: () -> Unit,
     context: Context
 ) {
     var host by remember { mutableStateOf("") }
@@ -84,13 +81,14 @@ private fun ExtendedConfig(
             value = port.toString(),
             onValueChange = {
                 port = mainScreenVM.checkForInteger(it)
-            }, placeholder = {
+            },
+            placeholder = {
                 Text(text = context.getString(R.string.port))
             }
         )
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = {
-            setServerProperties(host, port)
+            mainScreenVM.changeWebSocketParameters(host, port)
             switch()
         }) {
             Text(text = context.getString(R.string.accept))

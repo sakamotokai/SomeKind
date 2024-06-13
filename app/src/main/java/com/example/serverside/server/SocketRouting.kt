@@ -1,5 +1,6 @@
 package com.example.serverside.server
 
+import android.content.ContentValues
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.Duration
 import    android.graphics.Path
+import com.example.serverside.db.sqlite.DBContract
+import com.example.serverside.repository.DbRepository
 import com.example.serverside.server.dataset.PathDC
 import com.example.serverside.server.dataset.pathDataSet
 import com.google.gson.Gson
@@ -34,7 +37,11 @@ import kotlinx.serialization.json.JsonArray
 import org.json.JSONObject
 
 
-class WebSocketServer(private var host: String = "127.0.0.1", private var port: Int = 8080) {
+class WebSocketServer(
+    private var host: String = "127.0.0.1",
+    private var port: Int = 8080,
+    private val db: DbRepository
+) {
 
     private var _serverData: MutableStateFlow<List<String>> =
         MutableStateFlow(listOf())
@@ -45,9 +52,6 @@ class WebSocketServer(private var host: String = "127.0.0.1", private var port: 
     private var sessions: HashSet<DefaultWebSocketSession> = HashSet()
     private var server: JettyApplicationEngine? = null
 
-    companion object {
-        private var coroutineSessions: MutableList<Job?> = mutableListOf(null)
-    }
 
     private val scope = CoroutineScope(SupervisorJob())
 
@@ -69,75 +73,74 @@ class WebSocketServer(private var host: String = "127.0.0.1", private var port: 
             routing {
                 val coroutineScope = CoroutineScope(SupervisorJob())
                 coroutineScope.launch {
-                webSocket("/ws") {
-                    sessions += this
+                    webSocket("/ws") {
+                        sessions += this
 
-                    val dataset = Gson().toJson(pathDataSet)
+                        val dataset = Gson().toJson(pathDataSet)
 
                         try {
                             send(Frame.Text(dataset))
                             while (true) {
                                 for (frame in incoming) {
-                                    if (frame as? Frame.Text != null) {
-                                        Log.e("localError", "Write to RoomDB")
-                                        send(Frame.Text(dataset))
-                                        //this.cancel()
+                                    if (frame as? Frame.Text == null) continue
+
+                                    Log.e("localError", "Write to RoomDB: ${frame.readText()}")
+                                    launch {
+                                        try {
+                                            val frameData = frame.readText()
+                                            pathDataSet.forEach {
+                                                ContentValues().apply {
+                                                    put(
+                                                        DBContract.Gesture.COLUMN_NAME_MOVETOX,
+                                                        it.moveX
+                                                    )
+                                                    put(
+                                                        DBContract.Gesture.COLUMN_NAME_MOVETOY,
+                                                        it.moveY
+                                                    )
+                                                    put(
+                                                        DBContract.Gesture.COLUMN_NAME_LINETOX,
+                                                        it.lineX
+                                                    )
+                                                    put(
+                                                        DBContract.Gesture.COLUMN_NAME_LINETOY,
+                                                        it.lineY
+                                                    )
+                                                    put(
+                                                        DBContract.Gesture.COLUMN_NAME_DONE,
+                                                        frameData
+                                                    )
+                                                }.apply {
+                                                    db.insert(
+                                                        DBContract.Gesture.TABLE_NAME,
+                                                        this
+                                                    )
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e(
+                                                "localError",
+                                                "Coroutine Exception: ${e.localizedMessage}"
+                                            )
+                                        } finally {
+                                            this.cancel()
+                                        }
                                     }
+                                    send(Frame.Text(dataset))
+                                    //this.cancel()
+
                                 }
                                 delay(500)
                             }
-                        } catch (e:Exception){
+                        } catch (e: Exception) {
                             Log.e("localError", "Exception1: ${e.localizedMessage}")
                             sessions -= this@webSocket
                             this@webSocket.close()
-                        }
-                        finally {
+                        } finally {
                             //MAYBE REMOVE THAT
                         }
                     }
                 }
-                /*                coroutineSessions += scope.launch(Dispatchers.IO){
-                                webSocket("/ws") {
-                                    Log.e("localError", "WebSocket is Activated")
-                                        sessions += this@webSocket
-                                        val gson = Gson()
-                                        val json = gson.toJson(pathDataSet)
-                                        try {
-                                            send(Frame.Text(json))
-                                            val nestedScope = launch {
-                                                while (true) {
-                                                    delay(500)
-                                                    for (frame in incoming) {
-                                                        if (frame as? Frame.Text != null) {
-                                                            Log.e("localError", "Write to RoomDB")
-                                                            send(Frame.Text(json))
-                                                            this.cancel()
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            delay(3000)
-                                            if (!nestedScope.isCancelled) {
-                                                nestedScope.cancel()
-                                                for (frame in incoming) {
-                                                    frame as? Frame.Text ?: continue
-                                                    Log.e("localError", "Write to RoomDB2")
-                                                    send(Frame.Text(json))
-                                                }
-                                            }
-
-                                        } catch (e: Exception) {
-                                            Log.e(
-                                                "localError",
-                                                "Exception: ${e.localizedMessage} \n Message: ${e.message}"
-                                            )
-                                        } finally {
-                                            sessions -= this@webSocket
-                                            this.cancel()
-                                        }
-                                    }
-                                    Log.e("localError", "Is Ended")
-                                }*/
             }
         }.apply {
             try {
@@ -162,3 +165,7 @@ class WebSocketServer(private var host: String = "127.0.0.1", private var port: 
         }
     }
 }
+
+/*private fun String.toPathDC(): PathDC {
+
+}*/

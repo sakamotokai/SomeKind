@@ -2,4 +2,11 @@
     <string name="app_name">ServerSide</string>
     <string name="accessibility_service_label">Service From Server</string>
     <string name="accessibility_service_description">Description For Server Service</string>
+    <string name="configuration">Конфигурация</string>
+    <string name="turn_on">Начать</string>
+    <string name="turn_off">Выключить</string>
+    <string name="logs">Логи</string>
+    <string name="port">Порт</string>
+    <string name="host">IP адрес</string>
+    <string name="accept">Принять</string>
 </resources>

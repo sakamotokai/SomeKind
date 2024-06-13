@@ -1,6 +1,7 @@
 package com.example.clientside.ktorClient
 
 import android.accessibilityservice.GestureDescription
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import com.example.clientside.ktorClient.dataset.PathDC
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.Json
 import android.graphics.Path
+import android.net.wifi.WifiManager
+import android.text.format.Formatter
 import android.view.accessibility.AccessibilityEvent
 import com.example.clientside.accessibilityService.HandleAccessibilityService
 import com.example.clientside.accessibilityService.HandleAccessibilityService.Companion.gesture
@@ -27,31 +30,32 @@ import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 
 class WebSocketClient(
-    private val serverIp: String,
-    private val serverPort: Int,
-    private val accessibilityService: HandleAccessibilityService
+    private val accessibilityService: HandleAccessibilityService,
+    private val context: Context
 ) {
-    //ksp-2.0.0-1.0.22 is too new for kotlin-1.9.0. Please upgrade kotlin-gradle-plugin to 2.0.0.
-    private val client = HttpClient(OkHttp) {
-        install(WebSockets) { contentConverter = KotlinxWebsocketSerializationConverter(Json) }
+
+    init {
+        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val ipAddress: String = Formatter.formatIpAddress(wifiManager.connectionInfo.ipAddress)
+        serverIp = ipAddress
+    }
+
+    companion object {
+        private var serverIp: String? = null
+        private var serverPort: Int = 8080
+        private val client = HttpClient(OkHttp) {
+            install(WebSockets) { contentConverter = KotlinxWebsocketSerializationConverter(Json) }
+        }
     }
 
     private var socketSession: DefaultClientWebSocketSession? = null
-
-    private var _serverData: MutableStateFlow<List<String>> =
-        MutableStateFlow(listOf())
-    var serverData: StateFlow<List<String>> = _serverData
-
-    private var _gestureAccess: MutableStateFlow<Path> =
-        MutableStateFlow(Path())
-    var gestureAccess: StateFlow<Path> = _gestureAccess
 
     var coroutineJob: Job? = null
 
     fun launch() {
         coroutineJob = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.webSocket(host = serverIp, port = serverPort, path = "/ws") {
+                client.webSocket(host = serverIp ?: "127.0.0.1", port = serverPort, path = "/ws") {
                     socketSession = this
 
                     Log.e("localError", "inside init")
@@ -68,12 +72,15 @@ class WebSocketClient(
                             }
                         }
                         val waitedJob = launch {
-                            performGesture(arrayPathDC) { done = it }
+                            performGesture(arrayPathDC) {
+                                done = it
+                                Log.e("lofigirl", "Done is equal: $done")
+                            }
                         }
-                        delay(500)//work imitation
+                        delay(500)//work imitation TOO many data to write to db
                         waitedJob.join()
-                        _serverData.value += othersMessage.readText() ?: "Nothing again"
                         Log.e("localError", othersMessage.readText() ?: "Nothing")
+                        Log.e("lofigirl", "Before send function: " + done.toString() ?: "Nothing")
                         send(Frame.Text(done.toString()))
                     }
                 }
@@ -85,6 +92,18 @@ class WebSocketClient(
                 coroutineJob = null
                 this.cancel()
             }
+        }
+    }
+
+    fun changeWebSocketParameters(host: String, port: Int) {
+        try {
+            if (socketSession?.isActive != false) closeSession()
+            if (coroutineJob?.isActive != false) coroutineJob?.cancel()
+        } catch (e: Exception) {
+            Log.e("lofigirl", "ChangeWebSo...: ${e.localizedMessage}")
+        } finally {
+            serverIp = host
+            serverPort = port
         }
     }
 
@@ -127,7 +146,6 @@ class WebSocketClient(
             accessibilityService.apply {
                 gesture = it
                 HandleAccessibilityService.service?.onAccessibilityEvent(AccessibilityEvent.obtain())
-                //onAccessibilityEvent(null)
                 completed(gestureCompleted)
             }
         }

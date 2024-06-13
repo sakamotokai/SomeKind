@@ -1,6 +1,7 @@
 package com.example.serverside
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,6 +22,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
+import com.example.serverside.db.sqlite.DBContract
+import com.example.serverside.db.sqlite.GestureDbHelper
 import com.example.serverside.navigation.Navigation
 import com.example.serverside.server.WebSocketServer
 import com.example.serverside.ui.theme.ServerSideTheme
@@ -47,6 +50,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
+import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -61,5 +66,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        inject<GestureDbHelper>().apply {
+            this.value.close()
+        }
+        super.onDestroy()
     }
 }
