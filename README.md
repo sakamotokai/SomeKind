@@ -11,9 +11,9 @@
 * Perform random gestures on remoted mobile device
 * Write story to local db
 ## What will be able to:
-* Replay gestures by user or at specific time
-* Communicate with specific device
-* Open applications, change setting and so on
+* Replaying gestures after user or at specific time
+* Communicating with specific device
+* Opening applications, changing settings and so on
 
 # Description
 That project is just part of my fantasy that help me improve my skills and project will keep going to upgrade performance and getting new features.
