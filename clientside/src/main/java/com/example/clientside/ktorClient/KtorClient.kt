@@ -14,8 +14,6 @@ import io.ktor.websocket.readText
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import android.graphics.Path
-import android.net.wifi.WifiManager
-import android.text.format.Formatter
 import android.view.accessibility.AccessibilityEvent
 import com.example.clientside.accessibilityService.HandleAccessibilityService
 import com.example.clientside.accessibilityService.HandleAccessibilityService.Companion.gesture
@@ -28,14 +26,8 @@ class WebSocketClient(
     private val context: Context
 ) {
 
-    init {
-        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val ipAddress: String = Formatter.formatIpAddress(wifiManager.connectionInfo.ipAddress)
-        serverIp = ipAddress
-    }
-
     companion object {
-        private var serverIp: String? = null
+        private var serverIp: String = "192.168.1.211"
         private var serverPort: Int = 8080
         private val client = HttpClient(OkHttp) {
             install(WebSockets) { contentConverter = KotlinxWebsocketSerializationConverter(Json) }
@@ -47,6 +39,7 @@ class WebSocketClient(
     var coroutineJob: Job? = null
 
     fun launch() {
+
         coroutineJob = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.webSocket(host = serverIp ?: "127.0.0.1", port = serverPort, path = "/ws") {
