@@ -5,7 +5,7 @@
 * SQLite
 * Accessibility Service
 * Ktor
-* Koin
+* Koin1
 
 ## What it is able for now:
 * Perform random gestures on remoted mobile device
